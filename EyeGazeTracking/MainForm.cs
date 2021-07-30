@@ -2,6 +2,7 @@
 using Emgu.CV.CvEnum;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
+using System;
 using System.Diagnostics;
 using System.Drawing;
 using System.Windows.Forms;
@@ -22,11 +23,16 @@ namespace EyeGazeTracking
             InitializeComponent();
         }
 
-        private void Form1_Load(object sender, System.EventArgs e)
+        private void Form1_Load(object sender, EventArgs e)
         {
-            videoCapture = new VideoCapture();
-            videoCapture.Set(CapProp.FrameWidth, 1920);     // 1080
-            videoCapture.Set(CapProp.FrameHeight, 1080);    // 720
+            var cameraSettings = new Tuple<CapProp, int>[]
+            {
+                new Tuple<CapProp, int>(CapProp.HwAcceleration, (int)VideoAccelerationType.Any),
+                new Tuple<CapProp, int>(CapProp.FrameWidth, 1920),
+                new Tuple<CapProp, int>(CapProp.FrameHeight, 1080)
+            };
+
+            videoCapture = new VideoCapture(captureProperties: cameraSettings);
             videoCapture.FlipHorizontal = true;
 
             faceClassifier = new CascadeClassifier("face.xml");
@@ -38,7 +44,7 @@ namespace EyeGazeTracking
             settingsForm.Show(this);
         }
 
-        private void Application_Idle(object sender, System.EventArgs e)
+        private void Application_Idle(object sender, EventArgs e)
         {
             var frame = videoCapture.QueryFrame();
 
@@ -97,38 +103,48 @@ namespace EyeGazeTracking
                             lefEye.Width - 15,
                             lefEye.Height - 15);
 
+                        var tmp = grayImage.Copy(eyeroi);
+                        CvInvoke.Imshow("ciao1", tmp);
+
                         image.Draw(eyeroi, new Bgr(Color.Violet), 2);
 
                         var save = grayImage.Copy(eyeroi);
                         var abc = save.SmoothGaussian(settingsForm.SmoothGaussian);
                         var efg = abc.ThresholdBinary(new Gray(settingsForm.ThresholdBinary1), new Gray(settingsForm.ThresholdBinary2));
 
+                        CvInvoke.Imshow("ciao2", efg);
+
                         var contours = new VectorOfVectorOfPoint();
                         CvInvoke.FindContourTree(efg, contours, ChainApproxMethod.ChainApproxSimple);
 
-                        var largest_area = double.MaxValue;
-                        var largest = 0;
+                        var area = double.MaxValue;
+                        var index = 0;
                         for (int i = 0; i < contours.Size; i++)
                         {
-                            double a = CvInvoke.ContourArea(contours[i], false);
-                            Debug.WriteLine("Area: " + a);
+                            double tmpArea = CvInvoke.ContourArea(contours[i], false);
+                            Debug.WriteLine("Area: " + tmpArea);
 
-                            if (a < largest_area)
+                            if (tmpArea < area)
                             {
-                                largest_area = a;
-                                largest = i;
+                                area = tmpArea;
+                                index = i;
                             }
                         }
-                        Debug.WriteLine("Smallest: " + largest_area);
+                        Debug.WriteLine("Smallest: " + area);
 
-                        var rect = CvInvoke.BoundingRectangle(contours[largest]);
+                        var rect = CvInvoke.BoundingRectangle(contours[index]);
                         Debug.WriteLine("Rect: " + rect);
 
                         var roi = new Rectangle(eyeroi.Left + rect.Left,
                             eyeroi.Top + rect.Top,
                             rect.Width, rect.Height);
 
-                        image.Draw(roi, new Bgr(Color.DarkSalmon), 5);
+                        image.Draw(roi, new Bgr(Color.DarkSalmon), 3);
+
+                        var center = new Point(roi.Left - roi.Width / 2,
+                            roi.Top - roi.Height / 2);
+                        var circle = new CircleF(center, 3);
+                        image.Draw(circle, new Bgr(Color.White), 2);
                     }
                     if (rightEyes.Length > 0)
                     {

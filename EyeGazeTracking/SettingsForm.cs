@@ -21,9 +21,6 @@ namespace EyeGazeTracking
 
             textBox2.Text = "30";
             textBox3.Text = "255";
-
-            textBox4.Text = "30";
-            textBox5.Text = "50";
         }
 
         private void textBox1_TextChanged(object sender, EventArgs e)
@@ -42,18 +39,6 @@ namespace EyeGazeTracking
         {
             if (!string.IsNullOrEmpty(textBox3.Text))
                 ThresholdBinary2 = double.Parse(textBox3.Text);
-        }
-
-        private void textBox4_TextChanged(object sender, EventArgs e)
-        {
-            if (!string.IsNullOrEmpty(textBox4.Text))
-                Canny1 = double.Parse(textBox4.Text);
-        }
-
-        private void textBox5_TextChanged(object sender, EventArgs e)
-        {
-            if (!string.IsNullOrEmpty(textBox5.Text))
-                Canny2 = double.Parse(textBox5.Text);
         }
     }
 }
